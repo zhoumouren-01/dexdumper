@@ -151,7 +151,10 @@ static void* dumping_thread_function(void* thread_argument) {
     
     // Apply anti-detection techniques
     apply_stealth_techniques();
-    sleep(8); // Initial delay to avoid immediate detection
+    
+    // Use configurable initial delay
+    LOGI("Initial delay: %d seconds", THREAD_INITIAL_DELAY);
+    sleep(THREAD_INITIAL_DELAY);
     
     // Determine where to save dumped files
     char* output_directory = get_output_directory_path();
@@ -163,15 +166,21 @@ static void* dumping_thread_function(void* thread_argument) {
     // Ensure output directory exists
     mkdir(output_directory, 0755);
     
-    // Execute main dumping process
-    LOGI("=== STARTING FOCUSED DEX DUMP OPERATION ===");
-    execute_memory_dumping(output_directory);
+    // First scan
+    LOGI("=== STARTING FIRST DEX DUMP OPERATION ===");
+    execute_memory_dumping(output_directory); // Execute main dumping process
     
-    // Optional: Uncomment for secondary scan after delay
-    // sleep(12);
-    // LOGI("=== STARTING SECONDARY SCAN PASS ===");
-    // apply_stealth_techniques();
-    // execute_memory_dumping(output_directory);
+    // Conditional second scan
+#if ENABLE_SECOND_SCAN
+    LOGI("Second scan delay: %d seconds", SECOND_SCAN_DELAY);
+    sleep(SECOND_SCAN_DELAY);
+    
+    LOGI("=== STARTING SECOND DEX DUMP OPERATION ===");
+    apply_stealth_techniques();  // Re-apply stealth for second scan
+    execute_memory_dumping(output_directory); // Re-apply dumping process
+#else
+    LOGI("Second scan disabled in configuration");
+#endif
     
     // Clean up global registry to free memory
     pthread_mutex_lock(&dump_registry_mutex);

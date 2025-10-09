@@ -31,7 +31,22 @@
 
 // Feature toggles
 #define ENABLE_REGION_FILTERING 1    // Enable smart region filtering
+#define ENABLE_SECOND_SCAN 0  // Enable/disable second scan
+
+// Timing Configuration (in seconds)
+#define THREAD_INITIAL_DELAY 8     // Initial delay before first scan
+#define SECOND_SCAN_DELAY 12       // Delay between first and second scan
+
+// Signal Handling
 #define SIGNAL_STACK_SIZE SIGSTKSZ   // Size of signal handling stack
+
+// Output Directory Configuration
+#define OUTPUT_DIRECTORY_TEMPLATES { \
+    "/data/data/%s/files/dex_dump", \
+    "/data/user/0/%s/files/dex_dump", \
+    "/storage/emulated/0/Android/data/%s/files/dex_dump", \
+    "/sdcard/Android/data/%s/files/dex_dump" \
+}
 
 // Logging macros for different levels
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)

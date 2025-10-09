@@ -83,12 +83,7 @@ char* get_output_directory_path() {
     const char* package_name = get_current_package_name();
     
     // List of potential output directories in order of preference
-    const char* directory_templates[] = {
-        "/data/data/%s/files/dex_dump",           // App's private data
-        "/data/user/0/%s/files/dex_dump",         // Multi-user private data  
-        "/storage/emulated/0/Android/data/%s/files/dex_dump", // External storage
-        "/sdcard/Android/data/%s/files/dex_dump"  // Legacy external storage
-    };
+    const char* directory_templates[] = OUTPUT_DIRECTORY_TEMPLATES;
     
     size_t template_count = sizeof(directory_templates) / sizeof(directory_templates[0]);
     
