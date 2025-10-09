@@ -13,6 +13,7 @@ DexDumper is an advanced Android library that performs runtime memory analysis t
 - **🎯 Smart Memory Scanning** - Intelligent region filtering and DEX signature detection
 - **🛡️ Safe Memory Access** - Signal-handled memory reading prevents crashes
 - **📊 Duplicate Prevention** - SHA1 checksum and inode-based duplicate detection
+- **🧹 Exclusion Control** - SHA1-based exclusion list to skip unwanted DEX files
 
 ## 💡 Why Choose DexDumper?
 
@@ -129,6 +130,28 @@ DexDumper will automatically try these directories in order. You can change the 
 // Effect of disabling: Scans ALL memory regions including system areas
 #define ENABLE_REGION_FILTERING 1 // Enabled
 
+// Enable/disable second scan after initial dump
+#define ENABLE_SECOND_SCAN 0 // Disabled by default
+
+// Timing configuration (in seconds)
+#define THREAD_INITIAL_DELAY 8   // Delay before first scan
+#define SECOND_SCAN_DELAY 7      // Delay before second scan (if enabled)
+
+// Output directory templates (order of preference)
+#define OUTPUT_DIRECTORY_TEMPLATES { \
+    "/data/data/%s/files/dex_dump", \
+    "/data/user/0/%s/files/dex_dump", \
+    "/storage/emulated/0/Android/data/%s/files/dex_dump", \
+    "/sdcard/Android/data/%s/files/dex_dump" \
+}
+
+// SHA1 exclusion list
+// Any DEX with matching SHA1 will be skipped
+#define EXCLUDED_SHA1_LIST { \
+    "da39a3ee5e6b4b0d3255bfef95601890afd80709", /* Empty file SHA1 */ \
+    /* Add your excluded SHA1 hashes here */ \
+}
+
 // DEX file size limits
 #define DEX_MIN_FILE_SIZE 1024
 #define DEX_MAX_FILE_SIZE (50 * 1024 * 1024)
@@ -136,9 +159,6 @@ DexDumper will automatically try these directories in order. You can change the 
 // Memory scanning limits  
 #define DEFAULT_SCAN_LIMIT (2 * 1024 * 1024)
 #define MAX_REGION_SIZE (200 * 1024 * 1024)
-
-// Logging level control
-extern int verbose_logging;
 ```
 
 ## 📊 Performance Considerations
