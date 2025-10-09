@@ -187,10 +187,42 @@ int clean_output_directory(const char* directory_path) {
 }
 
 /**
- * @brief Dumps memory content to a file with duplicate detection
+ * @brief Checks if a SHA1 digest is in the exclusion list
+ * 
+ * @param sha1_digest 20-byte SHA1 digest to check
+ * @return 1 if excluded, 0 if not found in exclusion list
+ */
+int is_sha1_excluded(const uint8_t* sha1_digest) {
+    // Convert input SHA1 to hex string
+    char input_sha1_hex[41];
+    sha1_to_hex_string(sha1_digest, input_sha1_hex, sizeof(input_sha1_hex));
+    
+    // Get exclusion list from config
+    const char* excluded_sha1_hex[] = EXCLUDED_SHA1_LIST;
+    int excluded_count = sizeof(excluded_sha1_hex) / sizeof(excluded_sha1_hex[0]);
+    
+    if (excluded_count == 0) {
+        LOGI("SHA1 exclusion list is empty");
+        return 0; // No exclusion list or empty list
+    }
+    
+    // Compare with each excluded SHA1
+    for (int i = 0; i < excluded_count; i++) {
+        if (strcasecmp(input_sha1_hex, excluded_sha1_hex[i]) == 0) {
+            char partial_sha1[9];
+            snprintf(partial_sha1, sizeof(partial_sha1), "%.8s", input_sha1_hex);
+            LOGI("Skipping excluded DEX (SHA1: %s...)", partial_sha1);
+            return 1; // Found in exclusion list
+        }
+    }
+    return 0; // Not found in exclusion list
+}
+
+/**
+ * @brief Dumps memory content to a file with duplicate or exclude detection
  * 
  * This is the core function that writes detected DEX files to disk
- * after performing validation and duplicate checking.
+ * after performing validation and duplicate or exclude checking.
  * 
  * @param output_directory Directory to write the file to
  * @param memory_region Memory region information for tracking
@@ -217,6 +249,11 @@ int dump_memory_to_file(const char* output_directory, const MemoryRegion* memory
     // Compute SHA1 checksum for duplicate detection
     uint8_t sha1_digest[20];
     compute_sha1_checksum(data_buffer, data_size, sha1_digest);
+    
+    // Check if the dumped file is listed in the exclude list
+    if (is_sha1_excluded(sha1_digest)) {
+        return 0;
+    }
     
     // Check if we've already dumped a file with this checksum
     if (is_checksum_already_dumped(sha1_digest)) {

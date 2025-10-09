@@ -48,6 +48,12 @@
     "/sdcard/Android/data/%s/files/dex_dump" \
 }
 
+// SHA1 Exclusion List - Add SHA1 hashes of DEX files to exclude from dumping
+#define EXCLUDED_SHA1_LIST { \
+    "da39a3ee5e6b4b0d3255bfef95601890afd80709", /* Empty file SHA1 */ \
+    /* Add your excluded SHA1 hashes here */ \
+}
+
 // Logging macros for different levels
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__) 
