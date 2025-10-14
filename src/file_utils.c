@@ -141,7 +141,96 @@ void generate_dump_filename(char* filename_buffer, size_t buffer_size,
 }
 
 /**
- * @brief Cleans the output directory by removing all existing files
+ * @brief Checks if filename matches the exact DEX dump pattern
+ * 
+ * Pattern: dex_%d_%p_%s.dex
+ * Where: 
+ *   %d = region index (number)
+ *   %p = memory address (pointer format) 
+ *   %s = timestamp (YYYYMMDD_HHMMSS)
+ * 
+ * @param filename Filename to check
+ * @return 1 if matches pattern, 0 otherwise
+ */
+int matches_dex_dump_pattern(const char* filename) {
+    // Pattern breakdown:
+    // "dex_" + number + "_" + pointer + "_" + timestamp + ".dex"
+    
+    // Check prefix
+    if (strncmp(filename, "dex_", 4) != 0) {
+        return 0;
+    }
+    
+    // Find first underscore after "dex_"
+    char* first_underscore = strchr(filename + 4, '_');
+    if (!first_underscore) {
+        return 0;
+    }
+    
+    // Check if part between "dex_" and first underscore is a valid number
+    char number_part[32];
+    size_t num_len = first_underscore - (filename + 4);
+    if (num_len == 0 || num_len >= sizeof(number_part)) {
+        return 0;
+    }
+    
+    strncpy(number_part, filename + 4, num_len);
+    number_part[num_len] = '\0';
+    
+    // Verify it's a valid integer
+    char* endptr;
+    long region_index = strtol(number_part, &endptr, 10);
+    if (endptr != number_part + num_len || region_index < 0) {
+        return 0;
+    }
+    
+    // Find second underscore (after pointer)
+    char* second_underscore = strchr(first_underscore + 1, '_');
+    if (!second_underscore) {
+        return 0;
+    }
+    
+    // Check if part between underscores looks like a pointer (contains 'x' for hex)
+    int has_pointer_format = 0;
+    for (char* p = first_underscore + 1; p < second_underscore; p++) {
+        if (*p == 'x' || *p == 'X') {
+            has_pointer_format = 1;
+            break;
+        }
+    }
+    
+    if (!has_pointer_format) {
+        return 0;
+    }
+    
+    // Check for ".dex" extension
+    char* dot_dex = strstr(second_underscore, ".dex");
+    if (!dot_dex || strlen(dot_dex) != 4) {
+        return 0;
+    }
+    
+    // Verify timestamp part between second_underscore and .dex
+    // Timestamp should be in format YYYYMMDD_HHMMSS (digits and underscore)
+    char* timestamp_part = second_underscore + 1;
+    size_t timestamp_len = dot_dex - timestamp_part;
+    if (timestamp_len == 0) {
+        return 0;
+    }
+    
+    for (size_t i = 0; i < timestamp_len; i++) {
+        if (!isdigit(timestamp_part[i]) && timestamp_part[i] != '_') {
+            return 0;
+        }
+    }
+    
+    return 1; // All checks passed
+}
+
+/**
+ * @brief Cleans the output directory by removing only DEX dump files matching the specific pattern
+ * 
+ * This function safely cleans the output directory by selectively deleting only files that match
+ * the exact DEX dump filename pattern: "dex_%d_%p_%s.dex"
  * 
  * This prevents accumulation of dumped files across multiple runs
  * and helps avoid storage issues.
@@ -168,13 +257,22 @@ int clean_output_directory(const char* directory_path) {
         if (strcmp(directory_entry->d_name, ".") == 0 || 
             strcmp(directory_entry->d_name, "..") == 0) continue;
 
+        char* filename = directory_entry->d_name;
+        
+        // Filter files: only delete those matching DEX dump pattern "dex_%d_%p_%s.dex"
+        if (!matches_dex_dump_pattern(filename)) {
+            VLOGD("Skipping non-DEX-dump file: %s", filename);
+            continue; // Skip files that don't match exact pattern
+        }
+
         char full_file_path[MAX_PATH_LENGTH];
         snprintf(full_file_path, sizeof(full_file_path), "%s/%s", 
-                 directory_path, directory_entry->d_name);
+                 directory_path, filename);
         
-        // Delete the file
+        // Delete only matching DEX dump files
         if (unlink(full_file_path) == 0) {
             deleted_file_count++;
+            VLOGD("Deleted DEX dump file: %s", filename);
         } else {
             LOGE("Failed to delete file: %s", full_file_path);
             success_flag = 0;
@@ -182,7 +280,7 @@ int clean_output_directory(const char* directory_path) {
     }
 
     closedir(directory_handle);
-    LOGI("Cleaned %d files from directory: %s", deleted_file_count, directory_path);
+    LOGI("Cleaned %d DEX dump files from directory: %s", deleted_file_count, directory_path);
     return success_flag;
 }
 

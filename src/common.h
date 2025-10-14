@@ -26,6 +26,7 @@
 #include <setjmp.h>  // Non-local jumps (for exception handling)
 #include <stdint.h>  // Fixed-width integer types
 #include <stddef.h>  // Standard definitions
+#include <ctype.h>   // Character type checking and conversion
 
 /**
  * @brief Represents a memory region from /proc/self/maps

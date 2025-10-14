@@ -24,6 +24,9 @@ void create_directory_hierarchy(const char* directory_path);
 // Determines optimal output directory for dumped files
 char* get_output_directory_path(void);
 
+// Helper function for pattern matching
+int matches_dex_dump_pattern(const char* filename);
+
 // Cleans output directory by removing existing files
 int clean_output_directory(const char* directory_path);
 
