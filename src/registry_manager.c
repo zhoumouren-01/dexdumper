@@ -146,3 +146,123 @@ int is_sha1_excluded(const uint8_t* sha1_digest) {
     }
     return 0; // Not found in exclusion list
 }
+
+/**
+ * @brief Checks if a DEX file with the same SHA1 already exists in the output directory
+ * 
+ * This function scans through all files in the output directory to find duplicate DEX files.
+ * This prevents unnecessary SHA1 computation for non-DEX files and large files.
+ * 
+ * @param output_directory Path to the directory where DEX files are stored
+ * @param sha1_digest The 20-byte SHA1 hash of the DEX file we want to check
+ * @return 1 if a duplicate file is found, 0 if the file is unique
+ */
+int is_sha1_duplicate_in_directory(const char* output_directory, const uint8_t* sha1_digest) {
+    // Try to open the output directory
+    DIR* directory_handle = opendir(output_directory);
+    if (!directory_handle) {
+        // If directory doesn't exist, there are no duplicates
+        if (errno == ENOENT) return 0;
+        LOGE("Failed to open directory for duplicate check: %s", output_directory);
+        return 0;
+    }
+
+    struct dirent* directory_entry;
+    int duplicate_found = 0;
+    
+    // Convert the binary SHA1 to readable hex string for logging
+    char input_sha1_hex[41];
+    sha1_to_hex_string(sha1_digest, input_sha1_hex, sizeof(input_sha1_hex));
+    
+    // Buffer to read and check DEX file header
+    uint8_t dex_header[DEX_HEADER_SIZE];
+    
+    // Loop through each file in the directory
+    while ((directory_entry = readdir(directory_handle)) != NULL && !duplicate_found) {
+        // Skip the special directory entries "." and ".."
+        if (strcmp(directory_entry->d_name, ".") == 0 || 
+            strcmp(directory_entry->d_name, "..") == 0) continue;
+
+        char* filename = directory_entry->d_name;
+        
+        // QUICK FILTER: Only process files with ".dex" extension
+        // Check if filename ends with exactly ".dex" (4 characters)
+        char* dot_dex = strstr(filename, ".dex");
+        if (!dot_dex || strlen(dot_dex) != 4) {
+            continue; // Skip non-DEX files
+        }
+
+        // Build the full path to the file
+        char full_file_path[MAX_PATH_LENGTH];
+        snprintf(full_file_path, sizeof(full_file_path), "%s/%s", 
+                 output_directory, filename);
+
+        // Get file information to check if it's a regular file (not directory)
+        struct stat file_stat;
+        if (stat(full_file_path, &file_stat) != 0 || !S_ISREG(file_stat.st_mode)) {
+            continue; // Skip if we can't get file info or it's not a regular file
+        }
+
+        // SIZE CHECK: Skip files that are too small or too large to be DEX files
+        if (file_stat.st_size > DEX_MAX_FILE_SIZE || file_stat.st_size < DEX_MIN_FILE_SIZE) {
+            continue;
+        }
+
+        // Open the file for reading
+        FILE* file = fopen(full_file_path, "rb");
+        if (!file) {
+            VLOGD("Cannot open file for reading: %s", full_file_path);
+            continue;
+        }
+
+        // STEP 1: QUICK DEX HEADER VALIDATION
+        // Read the first few bytes to check DEX magic signature
+        if (fread(dex_header, 1, DEX_HEADER_SIZE, file) != DEX_HEADER_SIZE) {
+            fclose(file);
+            continue; // File is too small or can't be read
+        }
+
+        // Check if the file has the correct DEX magic bytes at the beginning
+        if (memcmp(dex_header, "dex\n", 4) != 0) {
+            fclose(file);
+            continue; // Not a valid DEX file, skip SHA1 computation
+        }
+
+        // STEP 2: MEMORY-EFFICIENT SHA1 COMPUTATION
+        // Reset file pointer to beginning for SHA1 computation
+        fseek(file, 0, SEEK_SET);
+        
+        // Initialize SHA1 context for computing hash
+        sha1_context sha1_ctx;
+        sha1_init(&sha1_ctx);
+        
+        // Use a buffer to read file in chunks (memory efficient)
+        uint8_t buffer[8192]; // 8KB buffer - balances memory usage and I/O efficiency
+        size_t bytes_read;
+        
+        // Read file in chunks and update SHA1 computation
+        while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+            sha1_update(&sha1_ctx, buffer, bytes_read);
+        }
+        fclose(file);
+        
+        // Finalize SHA1 computation to get the hash
+        uint8_t file_sha1[20];
+        sha1_final(&sha1_ctx, file_sha1);
+        
+        // STEP 3: DUPLICATE CHECK
+        // Compare the computed SHA1 with the input SHA1
+        if (compare_sha1_digests(sha1_digest, file_sha1)) {
+            // Found a duplicate! Log it and stop searching
+            char partial_sha1[9];
+            snprintf(partial_sha1, sizeof(partial_sha1), "%.8s", input_sha1_hex);
+            LOGI("Duplicate DEX file found! SHA1: %s... already saved as: %s", 
+                 partial_sha1, filename);
+            duplicate_found = 1;
+        }
+    }
+
+    // Clean up - close the directory
+    closedir(directory_handle);
+    return duplicate_found;
+}

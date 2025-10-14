@@ -27,6 +27,9 @@ void register_dumped_file_with_checksum(ino_t file_inode, const char* file_path,
 // Checks if a SHA1 digest is in the exclusion list
 int is_sha1_excluded(const uint8_t* sha1_digest);
 
+// Enhanced duplicate detection by checking existing files in directory
+int is_sha1_duplicate_in_directory(const char* output_directory, const uint8_t* sha1_digest);
+
 // Global registry variables (defined in registry_manager.c)
 extern DumpedFileInfo* dumped_files_registry;  // Array of dumped file info
 extern int dumped_files_count;                 // Current number of entries

@@ -230,6 +230,12 @@ int dump_memory_to_file(const char* output_directory, const MemoryRegion* memory
         return 0;
     }
     
+    // Check if SHA1 already exists in any file in output directory (persistent duplicate detection)
+    if (is_sha1_duplicate_in_directory(output_directory, sha1_digest)) {
+        VLOGD("Skipping duplicate DEX file based on directory SHA1 check");
+        return 0;
+    }
+    
     // Generate unique output filename
     char output_file_path[MAX_PATH_LENGTH];
     generate_dump_filename(output_file_path, sizeof(output_file_path), 
