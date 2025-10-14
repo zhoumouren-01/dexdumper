@@ -5,7 +5,7 @@
 
 #include "common.h"
 #include "config.h"
-#include "registry_manager.h"  // For duplicate tracking
+#include "registry_manager.h"  // For duplicates and excludes tracking
 #include "sha1.h"              // For checksum computation
 
 /**
@@ -35,8 +35,5 @@ void generate_dump_filename(char* filename_buffer, size_t buffer_size,
 // Core function to dump memory content to file with validation
 int dump_memory_to_file(const char* output_directory, const MemoryRegion* memory_region, 
                        int region_index, const void* data_buffer, size_t data_size);
-
-// Checks if a SHA1 digest is in the exclusion list
-int is_sha1_excluded(const uint8_t* sha1_digest);
 
 #endif
