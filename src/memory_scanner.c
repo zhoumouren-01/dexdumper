@@ -1,5 +1,6 @@
 #include "memory_scanner.h"
 #include "file_utils.h"
+#include "config_manager.h"
 
 /**
  * @brief Tests if a memory region can be safely read
@@ -139,42 +140,42 @@ int should_scan_memory_region(const MemoryRegion* memory_region) {
         return 0;
     }
 
-// Region filtering can be disabled at compile time
-#if ENABLE_REGION_FILTERING    
-    // Apply smart filtering to exclude system regions
-    if (strlen(memory_region->path_name) > 0) {
-        // Patterns for regions to exclude
-        const char* excluded_path_patterns[] = {
-            "/system/", "/apex/", "/vendor/", "/framework/",  // System directories
-            "core-oj", "core-libart", "android.", "java.",    // System libraries
-            "com.android.", "com.google.", "/dev/", "/proc/", // More system paths
-            "/ashmem/", "/dmabuf", "kgsl-3d0", "graphics",    // Hardware buffers
-            "[heap]", "[stack]", "[anon:",                    // Special regions
-            "hwui"                                            // UI framework
-        };
-
-        const char* package_name = get_current_package_name();
-
-        // Check against exclusion patterns
-        for (size_t i = 0; i < sizeof(excluded_path_patterns)/sizeof(excluded_path_patterns[0]); i++) {
-            if (strstr(memory_region->path_name, excluded_path_patterns[i])) {
-                // Override exclusion for certain DEX-related patterns
-                if (strstr(memory_region->path_name, ".dex") ||
-                    strstr(memory_region->path_name, ".vdex") ||
-                    strstr(memory_region->path_name, ".apk") ||
-                    strstr(memory_region->path_name, "dalvik") ||
-                    strstr(memory_region->path_name, "jit") ||
-                    (package_name && strlen(package_name) > 0 && 
-                     strstr(memory_region->path_name, package_name))) {
-                    VLOGD("Exclusion overridden for region: %s", memory_region->path_name);
-                    break;
+    // Configurable region filtering
+    if (should_enable_region_filtering()) {
+        // Apply smart filtering to exclude system regions
+        if (strlen(memory_region->path_name) > 0) {
+            // Patterns for regions to exclude
+            const char* excluded_path_patterns[] = {
+                "/system/", "/apex/", "/vendor/", "/framework/",  // System directories
+                "core-oj", "core-libart", "android.", "java.",    // System libraries
+                "com.android.", "com.google.", "/dev/", "/proc/", // More system paths
+                "/ashmem/", "/dmabuf", "kgsl-3d0", "graphics",    // Hardware buffers
+                "[heap]", "[stack]", "[anon:",                    // Special regions
+                "hwui"                                            // UI framework
+            };
+    
+            const char* package_name = get_current_package_name();
+    
+            // Check against exclusion patterns
+            for (size_t i = 0; i < sizeof(excluded_path_patterns)/sizeof(excluded_path_patterns[0]); i++) {
+                if (strstr(memory_region->path_name, excluded_path_patterns[i])) {
+                    // Override exclusion for certain DEX-related patterns
+                    if (strstr(memory_region->path_name, ".dex") ||
+                        strstr(memory_region->path_name, ".vdex") ||
+                        strstr(memory_region->path_name, ".apk") ||
+                        strstr(memory_region->path_name, "dalvik") ||
+                        strstr(memory_region->path_name, "jit") ||
+                        (package_name && strlen(package_name) > 0 && 
+                         strstr(memory_region->path_name, package_name))) {
+                        VLOGD("Exclusion overridden for region: %s", memory_region->path_name);
+                        break;
+                    }
+                    VLOGD("Excluding system region: %s", memory_region->path_name);
+                    return 0;
                 }
-                VLOGD("Excluding system region: %s", memory_region->path_name);
-                return 0;
             }
         }
     }
-#endif
     
     VLOGD("Region approved for scanning: %p-%p %s", 
           memory_region->start_address, memory_region->end_address, 

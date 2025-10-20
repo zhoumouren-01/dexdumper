@@ -1,5 +1,6 @@
 #include "file_utils.h"
 #include "registry_manager.h"
+#include "config_manager.h"
 
 /**
  * @brief Gets the current Android application's package name
@@ -82,13 +83,12 @@ char* get_output_directory_path() {
     static char output_directory[MAX_PATH_LENGTH];
     const char* package_name = get_current_package_name();
     
-    // List of potential output directories in order of preference
-    const char* directory_templates[] = OUTPUT_DIRECTORY_TEMPLATES;
-    
-    size_t template_count = sizeof(directory_templates) / sizeof(directory_templates[0]);
+    // Configurable output directories
+    int template_count = 0;
+    const char** directory_templates = get_output_directory_templates(&template_count);
     
     // Try each directory template until we find a writable one
-    for (size_t i = 0; i < template_count; i++) {
+    for (int i = 0; i < template_count; i++) {
         snprintf(output_directory, sizeof(output_directory), 
                 directory_templates[i], package_name);
         create_directory_hierarchy(output_directory);

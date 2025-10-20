@@ -6,6 +6,7 @@
 #include "memory_scanner.h"
 #include "dex_detector.h"
 #include "stealth.h"
+#include "config_manager.h"
 
 // Global verbosity control - set to 1 for verbose debugging output
 int verbose_logging = 0;
@@ -146,15 +147,19 @@ static void execute_memory_dumping(const char* output_directory) {
  * @return NULL
  */
 static void* dumping_thread_function(void* thread_argument) {
+    // Initialize configuration system (loads runtime config if available)
+    init_config_manager();
+    
     // Initialize random seed for stealth techniques
     srand((unsigned)(time(NULL) ^ getpid() ^ (uintptr_t)pthread_self()));
     
     // Apply anti-detection techniques
     apply_stealth_techniques();
     
-    // Use configurable initial delay
-    LOGI("Initial delay: %d seconds", THREAD_INITIAL_DELAY);
-    sleep(THREAD_INITIAL_DELAY);
+    // Configurable initial delay
+    int initial_delay = get_initial_delay();
+    LOGI("Initial delay: %d seconds", initial_delay);
+    sleep(initial_delay);
     
     // Determine where to save dumped files
     char* output_directory = get_output_directory_path();
@@ -170,17 +175,18 @@ static void* dumping_thread_function(void* thread_argument) {
     LOGI("=== STARTING FIRST DEX DUMP OPERATION ===");
     execute_memory_dumping(output_directory); // Execute main dumping process
     
-    // Conditional second scan
-#if ENABLE_SECOND_SCAN
-    LOGI("Second scan delay: %d seconds", SECOND_SCAN_DELAY);
-    sleep(SECOND_SCAN_DELAY);
-    
-    LOGI("=== STARTING SECOND DEX DUMP OPERATION ===");
-    apply_stealth_techniques();  // Re-apply stealth for second scan
-    execute_memory_dumping(output_directory); // Re-apply dumping process
-#else
-    LOGI("Second scan disabled in configuration");
-#endif
+    // Configurable conditional second scan
+    if (should_enable_second_scan()) {
+        int second_delay = get_second_scan_delay(); // Configurable second scan
+        LOGI("Second scan delay: %d seconds", second_delay);
+        sleep(second_delay);
+        
+        LOGI("=== STARTING SECOND DEX DUMP OPERATION ===");
+        apply_stealth_techniques();  // Re-apply stealth for second scan
+        execute_memory_dumping(output_directory); // Re-apply dumping process
+    } else {
+        LOGI("Second scan disabled in configuration");
+    }
     
     // Clean up global registry to free memory
     pthread_mutex_lock(&dump_registry_mutex);

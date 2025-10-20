@@ -1,4 +1,5 @@
 #include "registry_manager.h"
+#include "config_manager.h"
 
 // Global registry state - tracks all dumped files to prevent duplicates
 DumpedFileInfo* dumped_files_registry = NULL;
@@ -126,9 +127,9 @@ int is_sha1_excluded(const uint8_t* sha1_digest) {
     char input_sha1_hex[41];
     sha1_to_hex_string(sha1_digest, input_sha1_hex, sizeof(input_sha1_hex));
     
-    // Get exclusion list from config
-    const char* excluded_sha1_hex[] = EXCLUDED_SHA1_LIST;
-    int excluded_count = sizeof(excluded_sha1_hex) / sizeof(excluded_sha1_hex[0]);
+    // Configurable exclusion list
+    int excluded_count = 0;
+    const char** excluded_sha1_hex = get_excluded_sha1_list(&excluded_count);
     
     if (excluded_count == 0) {
         LOGI("SHA1 exclusion list is empty");

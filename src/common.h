@@ -27,6 +27,8 @@
 #include <stdint.h>  // Fixed-width integer types
 #include <stddef.h>  // Standard definitions
 #include <ctype.h>   // Character type checking and conversion
+#include <dlfcn.h>   // Dynamic linking operations
+#include <libgen.h>  // Pathname manipulation
 
 /**
  * @brief Represents a memory region from /proc/self/maps

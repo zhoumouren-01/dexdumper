@@ -17,7 +17,8 @@ LOCAL_SRC_FILES := \
 	../src/memory_scanner.c \
 	../src/dex_detector.c \
 	../src/stealth.c \
-	../src/sha1.c
+	../src/sha1.c \
+	../src/config_manager.c
 
 # Compiler flags
 LOCAL_CFLAGS := -Wall -Wextra -Wno-unused-parameter -fvisibility=hidden -O2

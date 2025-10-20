@@ -14,6 +14,7 @@ DexDumper is an advanced Android library that performs runtime memory analysis t
 - **🛡️ Safe Memory Access** - Signal-handled memory reading prevents crashes
 - **📊 Duplicate Prevention** - SHA1 checksum and inode-based duplicate detection
 - **🧹 Exclusion Control** - SHA1-based exclusion list to skip unwanted DEX files
+- **⚙️ Runtime Configuration** - Dynamic configuration without recompiling via external config files
 
 ## 💡 Why Choose DexDumper?
 
@@ -26,6 +27,14 @@ If this library is implemented in a sandbox or virtual machine, it can dump the 
 - Implement the library in a sandbox or virtual machine.
 - Clone and run the official/test apps inside the sandbox or virtual machine.
 - The dex files of the official/test apps will be dumped and saved.
+
+**🔧 Dynamic Runtime Configuration**
+DexDumper features an advanced runtime configuration system that allows you to customize behavior without recompiling:
+
+- Automatically detects and pairs configuration files with library names.
+- If no config exists, DexDumper creates a detailed, commented configuration file.
+
+*How it works:* The library automatically extracts its own filename (e.g., `libdexdumper.so` → `dexdumper.conf`) and searches for matching configuration files. This ensures that even when you rename the library for stealth, the configuration system remains functional.
 
 ## 🛠️ Build & Installation
 
@@ -160,6 +169,22 @@ DexDumper will automatically try these directories in order. You can change the 
 #define DEFAULT_SCAN_LIMIT (2 * 1024 * 1024)
 #define MAX_REGION_SIZE (200 * 1024 * 1024)
 ```
+
+### Runtime Configuration ([LIBRARY_NAME].conf)
+
+DexDumper automatically creates and reads configuration files at runtime. No recompilation needed!
+
+**Configuration File Locations:**
+- `/data/data/[PACKAGE]/files/[LIBRARY_NAME].conf`
+- `/data/user/0/[PACKAGE]/files/[LIBRARY_NAME].conf` 
+- `/storage/emulated/0/Android/data/[PACKAGE]/files/[LIBRARY_NAME].conf`
+
+**First Run Behavior:**
+- Automatically generates a detailed configuration file with explanations
+- Uses compile-time defaults until you customize the file  
+- File includes comprehensive comments for every setting
+
+**To customize:** Edit the generated `.conf` file, save, and restart the app. The library will use your new settings immediately.
 
 ## 📊 Performance Considerations
 
