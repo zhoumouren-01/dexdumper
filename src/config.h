@@ -37,9 +37,6 @@
 #define THREAD_INITIAL_DELAY 8     // Initial delay before first scan
 #define SECOND_SCAN_DELAY 12       // Delay between first and second scan
 
-// Signal Handling
-#define SIGNAL_STACK_SIZE SIGSTKSZ   // Size of signal handling stack
-
 // Output Directory Configuration
 #define OUTPUT_DIRECTORY_TEMPLATES { \
     "/data/data/%s/files/dex_dump", \
@@ -51,8 +48,12 @@
 // SHA1 Exclusion List - Add SHA1 hashes of DEX files to exclude from dumping
 #define EXCLUDED_SHA1_LIST { \
     "da39a3ee5e6b4b0d3255bfef95601890afd80709", /* Empty file SHA1 */ \
-    /* Add your excluded SHA1 hashes here */ \
+    "5ba93c9db0cff93f52b521d7420e43f6eda2784f", /* Null file 1 SHA1 */ \
+    "1489f923c4dca729178b3e3233458550d8dddf29" /* Null file 2 SHA1 */ \
 }
+
+// Signal Handling
+#define SIGNAL_STACK_SIZE SIGSTKSZ   // Size of signal handling stack
 
 // Logging macros for different levels
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
