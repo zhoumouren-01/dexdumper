@@ -49,7 +49,11 @@
 #define EXCLUDED_SHA1_LIST { \
     "da39a3ee5e6b4b0d3255bfef95601890afd80709", /* Empty file SHA1 */ \
     "5ba93c9db0cff93f52b521d7420e43f6eda2784f", /* Null file 1 SHA1 */ \
-    "1489f923c4dca729178b3e3233458550d8dddf29" /* Null file 2 SHA1 */ \
+    "1489f923c4dca729178b3e3233458550d8dddf29", /* Null file 2 SHA1 */ \
+    "770d2935c448de7d0c2165139527b91965edd0a2",
+    "1e34300e20b771c45ace639ec247d31e8d7df9d6",
+    "acf80e6e6cf56dff53d62532ea59d54e6e6c426e",
+    "565dcea0ba9668c6cadf19c18d426fc6ad9e6ad6"
 }
 
 // Signal Handling
